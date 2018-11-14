@@ -1,6 +1,53 @@
 
 
 
+----------------------------------------------------------------------------------
+
+고정 IP 설정
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s8
+
+TYPE=Ethernet
+#PROXY_METHOD=none
+#BROWSER_ONLY=no
+#BOOTPROTO=dhcp
+#DEFROUTE=yes
+#IPV4_FAILURE_FATAL=no
+#IPV6INIT=yes
+#IPV6_AUTOCONF=yes
+#IPV6_DEFROUTE=yes
+#IPV6_FAILURE_FATAL=no
+#IPV6_ADDR_GEN_MODE=stable-privacy
+#NAME=enp0s8
+#UUID=099cf584-de9d-4be7-baea-94d991741431
+#DEVICE=enp0s8
+ONBOOT=yes
+
+NM_CONTROLLED=no
+BOOTPROTO=static
+DEVICE=enp0s8
+IPADDR=192.168.103.73
+NETMASK=255.255.255.0
+GATEWAY=192.168.0.1
+~
+-------------------------------------------------------------------
+hosts 수정
+vi /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 <--지운다
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6  <-- 지운다
+                   |
+                   |
+                   |
+
+192.168.103.73  nn1 <-- 개인 ip
+192.168.103.110 dn1 <--할당받은 노예 ip
+192.168.103.111 dn2
+------------------------------------------------------------
+network 수정
+vi /etc/sysconfig/network
+
+NETWORKING=yes
+HOSTNAME=nn1
+
 하둡 그룹 생성
 groupadd hadoop
 하둡 그룹에 user 추가
@@ -26,3 +73,169 @@ export HADOOP_OPTS=-Djava.net.preferIPv4Stack=true
 export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
 PATH=$JAVA_HOME/bin:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:$PATH
 export PATH
+
+hduser로 바꾸고 경로 지정과 소스와 java 버전을 확인한다
+[root@nn1 ~]# su - hduser
+마지막 로그인: 수 11월 14 12:44:48 KST 2018 일시 pts/0
+[hduser@nn1 ~]$ vi ~/.bash_profile
+[hduser@nn1 ~]$ source ~/.bash_profile
+[hduser@nn1 ~]$ java -version
+java version "1.8.0_191"
+Java(TM) SE Runtime Environment (build 1.8.0_191-b12)
+Java HotSpot(TM) 64-Bit Server VM (build 25.191-b12, mixed mode)
+[hduser@nn1 ~]$ echo $HADOOP_CONF_DIR
+/home/hduser/hadoop/etc/hadoop
+
+루트로 관리자를 바꾸고 hadoop 연계 폴더와 그안에 데이터 노드&네임노드를 만든다 (opt에서)
+[hduser@nn1 opt]$ su - root
+cd /opt/
+
+mkdir -p dfs/namenode
+mkdir -p dfs/datanode
+---------------------------------------------------
+
+디렉토리 내부를 깔끔하게 한다
+ls
+rm -fr rh
+그리고 su - hduser로 바꾼다!!!
+cd $HADOOP_CONF_DIR
+---------------------------------------
+하둡 설정을 바꾼다
+vi hadoop-env.sh
+그리고 그 상태 그대로에서 /JAVA_H 를 입력하고 엔터를 누른다. 그럼 찾기 기능이 실현된다
+export JAVA_HOME=/home/hduser/jdk1.8.0_191 <-- 추가한다
+/LOG를 검색하고 
+export HADOOP_LOG_DIR=/home/hduser/hadoop/logs <--추가한다
+
+vi core-site.xml
+
+<configuration>
+<property>
+        <name>fs.default.name</name>
+        <value>hdfs://nn1:9000</value>
+</property>
+<property>
+        <name>dfs.permissions</name>
+        <value>false</value>
+</property>
+</configuration>
+
+vi hdfs-site.xml
+
+<configuration>
+<property>
+        <name>dfs.data.dir </name>
+        <value>/opt/dfs/datanode </value>
+</property>
+<property>
+         <name>dfs.namenode.name.dir</name>
+        <value>/opt/dfs/namenode</value>
+
+</property>
+<property>
+        <name>dfs.replication</name>
+        <value>2</value>
+
+</property>
+
+</configuration>
+---------------------------------------------------------------------------------------
+vi yarn-site.xml
+<configuration>
+
+<!-- Site specific YARN configuration properties -->
+<property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+
+</property>
+<property>
+        <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+
+</property>
+<property>
+        <name>yarn.resourcemanager.address</name>
+        <value>nn1:8032</value>
+
+</property>
+<property>
+        <name>yarn.resourcemanager.webapp.address</name>
+        <value>nn1:8088</value>
+
+</property>
+<property>
+        <name>yarn.resourcemanager.resource-tracker.address</name>
+        <value>nn1:8031</value>
+
+</property>
+
+</configuration>
+-------------------------------------------------------------------------------
+cp mapred-site.xml.template mapred-site.xml
+
+------------------------------------------------------------
+ vi mapred-site.xml
+
+<configuration>
+<property>
+        <name>mapreduce.jobtracker.address</name>
+        <value>nn1:54311</value>
+
+</property>
+<property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+
+</property>
+</configuration>
+----------------끄고 버추얼박스로 나온다-------------------------------------------
+버추얼 박스에서 클론을 만든다 이름은 노예이름으로 dn1
+mac 주소 초기화는 클릭하지 않고 완전복제로 한다
+dn1에서 dn2도 같은 방식으로 복제한다
+nn1,dn1,dn2를 키고 dn1에서
+----------------------------------------여기서 부터는 dn1로 한다----------------------------------
+ vi /etc/hostaname 을 nn1 -> dn1으로 바꾼다
+
+cat /etc/hosts 으로 확인하고
+vi /etc/sysconfig/network
+HOSTNAME 을 nn1에서 dn1로 바꾼다
+vi /etc/sysconfig/network-scripts/ifcfg-enp0s8 에서 ipaddr 에 노예 ip로 고정변경한다
+그리고 service network restart
+각각 본인 ip와 다른 ip 전부 ping으로 확인한다
+그리고 노예들은 껐다 다시 킨다
+마스터에서 전체 ping들을 확인하고 
+ssh 키를 만든다 
+-------------ssh-------------------------
+su - hduser로 유저 바꾼다
+ssh-keygen -t rsa
+걍 엔터 누르삼
+ssh-copy-id -i ~/.ssh/id_rsa.pub hduser@nn1 
+password : hduser 비밀번호
+
+만들고 ssh hduser@nn1로 로그인 logout으로 로그아웃
+ ssh-copy-id -i ~/.ssh/id_rsa.pub hduser@dn1
+똑같이 비밀번호 입력
+ssh hduser@dn1
+hostname으로 확인
+그리고 logout
+ssh 0.0.0.0 도 한다 근데 영상에 의하면 로그인을 도중 멈춘다 
+그래서 만약 멈추지 못하고 로그인 했을 경우에는 logout을 한다 
+chmod 0600 ~/.ssh/authorized_keys
+vi ~/.ssh/known_hosts # 이거는 각각 그거 ssh 확인 하는거
+      ssh -vvv hduser@이름 #이건 디버깅이라는데 영상에선 사용안함 
+cd $HADDOP_CONF_DIR
+vi masters 하고 마스터 이름 적는다
+vi slaves 하면 안에있는 local host 지우고 노예들로 채운다
+그리고 hdfs 하고 tab버튼을 눌러서 확인하고
+hdfs namenode -format 입력한다 이걸로 까는 듯 하다
+그리고 hduser/hadoop 디텍토리 안에 logs 폴더를 만드세요(이미 있을 경우도 있음)
+mkdir logs 주의 사항 /home/hduser/etc/hadoop 안에 입니다.
+ls /opt/dfs/datanode/ #아마 안에 아무것도 없을 겁니다.
+start-dfs.sh #HDFS 데몬 시작
+start-yarn.sh # 
+start-all.sh #전부 시작
+***********************일단 경고가 뜨는데 우선 무시 하고 나중에 수정할 것***************************
+start-dfs.sh (영상에선 logs폴더에서 시작)
+그리고 각 가상머신에서 jps 입력해보삼
+
