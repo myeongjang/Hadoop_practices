@@ -1,0 +1,9 @@
+전에 수정 했던 
+vi /etc/hosts 에서 지웠던 내용을 다시 채워야 한다
+
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain
+192.168.103.XXX nn1
+
+vi /etc/sysconfig/network 에서
+전부다 주석처리 한다

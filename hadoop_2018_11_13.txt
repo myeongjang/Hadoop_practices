@@ -25,7 +25,7 @@ ONBOOT=yes
 NM_CONTROLLED=no
 BOOTPROTO=static
 DEVICE=enp0s8
-IPADDR=192.168.103.73
+IPADDR=192.168.103.116
 NETMASK=255.255.255.0
 GATEWAY=192.168.0.1
 ~
@@ -62,7 +62,13 @@ tar -xzf jdk-8u45-linux-x64.tar.gz
 하둡설치 
 wget https://dist.apache.org/repos/dist/release/hadoop/common/hadoop-2.9.1/hadoop-2.9.1.tar.gz
 tar -xzf hadoop-2.9.1.tar.gz
+ln -s hadoop-2.9.1.tar.gz hadoop
 
+
+hduser로 바꾸고 경로 지정과 소스와 java 버전을 확인한다
+[root@nn1 ~]# su - hduser
+마지막 로그인: 수 11월 14 12:44:48 KST 2018 일시 pts/0
+[hduser@nn1 ~]$ vi ~/.bash_profile
 경로 수정
 vi ~/.bash_profile
 export JAVA_HOME=/home/hduser/jdk1.8.0_191
@@ -74,10 +80,6 @@ export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
 PATH=$JAVA_HOME/bin:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:$PATH
 export PATH
 
-hduser로 바꾸고 경로 지정과 소스와 java 버전을 확인한다
-[root@nn1 ~]# su - hduser
-마지막 로그인: 수 11월 14 12:44:48 KST 2018 일시 pts/0
-[hduser@nn1 ~]$ vi ~/.bash_profile
 [hduser@nn1 ~]$ source ~/.bash_profile
 [hduser@nn1 ~]$ java -version
 java version "1.8.0_191"
@@ -106,7 +108,7 @@ vi hadoop-env.sh
 export JAVA_HOME=/home/hduser/jdk1.8.0_191 <-- 추가한다
 /LOG를 검색하고 
 export HADOOP_LOG_DIR=/home/hduser/hadoop/logs <--추가한다
-
+------------------------------------------------------------------------------------------------
 vi core-site.xml
 
 <configuration>
@@ -119,7 +121,7 @@ vi core-site.xml
         <value>false</value>
 </property>
 </configuration>
-
+------------------------------------------------------------------------------------------------
 vi hdfs-site.xml
 
 <configuration>
@@ -171,6 +173,7 @@ vi yarn-site.xml
 </property>
 
 </configuration>
+
 -------------------------------------------------------------------------------
 cp mapred-site.xml.template mapred-site.xml
 
@@ -220,17 +223,17 @@ ssh hduser@dn1
 hostname으로 확인
 그리고 logout
 ssh 0.0.0.0 도 한다 근데 영상에 의하면 로그인을 도중 멈춘다 
-그래서 만약 멈추지 못하고 로그인 했을 경우에는 logout을 한다 
+그래서 만약 멈추지 못하고 로그인 했을 경우에는 logout을 한다 vi 
 chmod 0600 ~/.ssh/authorized_keys
 vi ~/.ssh/known_hosts # 이거는 각각 그거 ssh 확인 하는거
       ssh -vvv hduser@이름 #이건 디버깅이라는데 영상에선 사용안함 
-cd $HADDOP_CONF_DIR
+cd $HADOOP_CONF_DIR
 vi masters 하고 마스터 이름 적는다
 vi slaves 하면 안에있는 local host 지우고 노예들로 채운다
 그리고 hdfs 하고 tab버튼을 눌러서 확인하고
 hdfs namenode -format 입력한다 이걸로 까는 듯 하다
 그리고 hduser/hadoop 디텍토리 안에 logs 폴더를 만드세요(이미 있을 경우도 있음)
-mkdir logs 주의 사항 /home/hduser/etc/hadoop 안에 입니다.
+mkdir logs 주의 사항 /home/hduser/hadoop안에 입니다.
 ls /opt/dfs/datanode/ #아마 안에 아무것도 없을 겁니다.
 start-dfs.sh #HDFS 데몬 시작
 start-yarn.sh # 
