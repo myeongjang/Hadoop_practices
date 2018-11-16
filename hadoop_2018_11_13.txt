@@ -62,7 +62,9 @@ tar -xzf jdk-8u45-linux-x64.tar.gz
 하둡설치 
 wget https://dist.apache.org/repos/dist/release/hadoop/common/hadoop-2.9.1/hadoop-2.9.1.tar.gz
 tar -xzf hadoop-2.9.1.tar.gz
-ln -s hadoop-2.9.1.tar.gz hadoop
+----------------------------------------------------
+
+ln -s hadoop-2.9.1 hadoop
 
 
 hduser로 바꾸고 경로 지정과 소스와 java 버전을 확인한다
@@ -126,8 +128,8 @@ vi hdfs-site.xml
 
 <configuration>
 <property>
-        <name>dfs.data.dir </name>
-        <value>/opt/dfs/datanode </value>
+        <name>dfs.data.dir</name>
+        <value>/opt/dfs/datanode</value>
 </property>
 <property>
          <name>dfs.namenode.name.dir</name>
@@ -140,7 +142,7 @@ vi hdfs-site.xml
 
 </property>
 
-</configuration>
+</configuration> 
 ---------------------------------------------------------------------------------------
 vi yarn-site.xml
 <configuration>
